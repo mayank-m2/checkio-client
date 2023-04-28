@@ -31,7 +31,12 @@ def api_request_cio(path, data=None):
     req.add_header('CheckiOApiKey', domain_data['key'])
     req.add_header('X-CheckiO-Client-Version', STR_VERSION)
     try:
-        res = urllib.request.urlopen(req) # TODO: all kind of errors
+        # https://github.com/CheckiO/checkio-client/issues/15
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        res = urllib.request.urlopen(req, context=ctx)  # TODO: all kind of errors
     except HTTPError as e:
         resp = json.loads(e.read().decode('utf-8'))
         if resp.get('error') == 'OldClient':
