@@ -31,12 +31,7 @@ def api_request_cio(path, data=None):
     req.add_header('CheckiOApiKey', domain_data['key'])
     req.add_header('X-CheckiO-Client-Version', STR_VERSION)
     try:
-        # https://github.com/CheckiO/checkio-client/issues/15
-        import ssl
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        res = urllib.request.urlopen(req, context=ctx)  # TODO: all kind of errors
+        res = req_ssl_error(req)
     except HTTPError as e:
         resp = json.loads(e.read().decode('utf-8'))
         if resp.get('error') == 'OldClient':
@@ -46,6 +41,17 @@ def api_request_cio(path, data=None):
     resp_text = res.read().decode('utf-8')
     logging.debug('RESP: ' + resp_text)
     return json.loads(resp_text)
+
+
+def req_ssl_error(req):
+    # https://github.com/CheckiO/checkio-client/issues/15
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    res = urllib.request.urlopen(req, context=ctx)
+    return res
+
 
 def api_request_eoc(path, data=None):
     domain_data = conf.default_domain_data
@@ -147,7 +153,7 @@ def center_request(path, data):
     full_path = domain_data['url_main'] + '/center/1' + path
     req = urllib.request.Request(full_path, data=http_data)
 
-    res = urllib.request.urlopen(req) # TODO: all kind of errors
+    res = req_ssl_error(req)
     return json.loads('[' + res.read().decode('utf-8')[:-1] + ']')
 
 def check_solution(code, task_id):
